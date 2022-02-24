@@ -3,9 +3,6 @@ set up a vagrant redhat based box with local dnf repo ( iso image )
 
 Create the following Vagrant file
 
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
 Vagrant.configure("2") do |config|
     config.vm.define "rhel8" do | rb |
     end
@@ -43,8 +40,15 @@ on virsh side mount cdrom permanently
 
 virsh attach-disk rhel8  /home/vagrant/RACROC/provision/staging/rhel-8.5-x86_64-dvd.iso hdc --type cdrom --mode readonly --persistent
 
+add this option to the Vagrant file
+
+**libvirt.storage :file, :device => :cdrom, :bus => :ide, :type => :raw, :path => "/home/vagrant/RACROC/provision/staging/rhel-8.5-x86_64-dvd.iso"**
+
+add entry to /etc/fstab
+
+/dev/cdrom    /media   udf,iso9660 user,auto,exec,utf8   0   0
+
 Create Vagrant box
 
 vagrant package --output arkzoidal_rhel8.box
-
-
+vagrant box add arkzoidal_rhel8.box --name Arkzoidal/rhel8_ora
