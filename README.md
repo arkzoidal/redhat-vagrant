@@ -1,5 +1,5 @@
 # redhat-vagrant
-set up a vagrant redhat based box with local dnf repo ( iso image ) 
+## set up a vagrant redhat based box with local dnf repo ( iso image ) 
 
 Create the following Vagrant file
 
@@ -52,3 +52,66 @@ Create Vagrant box
 
 vagrant package --output arkzoidal_rhel8.box
 vagrant box add arkzoidal_rhel8.box --name Arkzoidal/rhel8_ora
+
+## Create Vagrant box from KVM
+
+adduser vagrant
+sudo visudo -f /etc/sudoers.d/vagrant
+vagrant ALL=(ALL) NOPASSWD:ALL
+
+dnf install -y openssh-server
+
+mkdir -p /home/vagrant/.ssh
+chmod 0700 /home/vagrant/.ssh
+wget --no-check-certificate \
+https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
+-O /home/vagrant/.ssh/authorized_keys
+chmod 0600 /home/vagrant/.ssh/authorized_keys
+chown -R vagrant /home/vagrant/.ssh
+
+vi /etc/ssh/sshd_config 
+PubKeyAuthentication yes
+AuthorizedKeysFile %h/.ssh/authorized_keys
+PermitEmptyPasswords no
+PasswordAuthentication no
+
+service ssh restart
+
+shutdown the VM 
+
+
+
+/var/lib/libvirt/images/
+cp /var/lib/libvirt/images/test.img  /test 
+
+create two file metadata.json and Vagrantfile in /test do entry in metadata.json
+
+{
+  "provider"     : "libvirt",
+  "format"       : "qcow2",
+  "virtual_size" : 40
+}
+
+
+Vagrant.configure("2") do |config|
+         config.vm.provider :libvirt do |libvirt|
+         libvirt.driver = "kvm"
+         libvirt.host = 'localhost'
+         libvirt.uri = 'qemu:///system'
+         end
+config.vm.define "new" do |custombox|
+         custombox.vm.box = "custombox"       
+         custombox.vm.provider :libvirt do |test|
+         test.memory = 1024
+         test.cpus = 1
+         end
+         end
+end
+
+qemu-img convert -f raw -O qcow2  test.img  ubuntu.qcow2
+
+mv ubuntu.qcow2 box.img 
+
+tar cvzf custom_box.box ./metadata.json ./Vagrantfile ./box.img 
+
+vagrant box add --name custom custom_box.box
